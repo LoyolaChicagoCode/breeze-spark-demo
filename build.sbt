@@ -1,4 +1,4 @@
-name := "breezedemo-spark-scala"
+name := "demo-breeze-spark-scala"
 
 version := "1.0"
 
@@ -22,5 +22,5 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.6" % Test,
   "org.scalanlp" %% "breeze" % "0.12",
   "org.scalanlp" %% "breeze-natives" % "0.12",
-    "org.scalanlp" %% "breeze-viz" % "0.12"
+  "org.scalanlp" %% "breeze-viz" % "0.12"
 )
