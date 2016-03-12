@@ -12,6 +12,7 @@ import scala.util.Try
 import org.apache.spark._
 import cs.luc.edu.performance._
 import cs.luc.edu.fileutils._
+import breeze.linalg._
 
 object BreezeSparkBenchmark {
 
@@ -25,10 +26,13 @@ object BreezeSparkBenchmark {
   // This function is evaluated in parallel via the RDD
 
   def doSomeMath(slice: Int, dim: Int): Results = {
-    import breeze.linalg._
+
+    // this is a function (closure)
+    def getDoubleMatrix = DenseMatrix.fill[Double](dim, dim) { math.random }
+
     val (deltat, memUsed, matrixTrace) = performance {
-      val matrix = DenseMatrix.fill[Double](2048, 2048) { math.random }
-      trace(matrix)
+      val a = Array.fill(dim)(getDoubleMatrix)
+      a.map { matrix => trace(matrix) }.sum
     }
     Results(matrixTrace, deltat, memUsed)
   }
