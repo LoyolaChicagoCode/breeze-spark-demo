@@ -26,18 +26,16 @@ object BreezeSparkBenchmark {
 
   case class Results(result: Double, time: Time, space: Space)
 
-  case class Config(dim: Option[Int] = None, nodes: Option[Int] = None, slices: Option[Int] = None, workload: Option[Int] = None)
+  case class Config(dim: Option[Int] = None, nodes: Option[Int] = None, partitions: Option[Int] = None, workload: Option[Int] = None)
 
   // This function is evaluated in parallel via the RDD
 
   def getDoubleMatrix(dim: Int) = DenseMatrix.fill[Double](dim, dim) { math.random }
+
   def do3D(slice: Int, dim: Int): Results = {
-
-    // this is a function (closure)
-
     val (t3d, m3d, sumTrace2d) = performance {
       val a = Array.fill(dim)(getDoubleMatrix(dim))
-      a.par.map { matrix => trace(matrix) }.sum
+      a.map { matrix => trace(matrix) }.sum
     }
 
     Results(sumTrace2d, t3d, m3d)
@@ -58,9 +56,9 @@ object BreezeSparkBenchmark {
         c.copy(dim = Some(x))
       } text (s"dim is the matrix dimension (default = $DEFAULT_NODES)")
 
-      opt[Int]('s', "slices") action { (x, c) =>
-        c.copy(slices = Some(x))
-      } text (s"slices is RDD partition size (default = $DEFAULT_PARTITIONS)")
+      opt[Int]('p', "partitions") action { (x, c) =>
+        c.copy(partitions = Some(x))
+      } text (s"partitions is RDD partition size (default = $DEFAULT_PARTITIONS)")
 
       opt[Int]('n', "nodes") action { (x, c) =>
         c.copy(nodes = Some(x))
@@ -82,13 +80,14 @@ object BreezeSparkBenchmark {
     val spark = new SparkContext(conf)
     val appConfig = parseCommandLine(args).getOrElse(Config())
     val dim = appConfig.dim.getOrElse(DEFAULT_DIMENSION)
-    val slices = appConfig.slices.getOrElse(DEFAULT_PARTITIONS)
+    val partitions = appConfig.partitions.getOrElse(DEFAULT_PARTITIONS)
     val nodes = appConfig.nodes.getOrElse(DEFAULT_NODES)
+    val workload = appConfig.workload.getOrElse(nodes * partitions)
 
     // create RDD from generated file listing
 
     val (rddElapsedTime, rddMemUsed, rdd) = performance {
-      spark.parallelize(1 to slices, slices).map {
+      spark.parallelize(1 to workload, partitions).map {
         slice => do3D(slice, dim)
       }
     }
@@ -98,7 +97,7 @@ object BreezeSparkBenchmark {
     }
 
     val (rdd2ElapsedTime, rdd2MemUsed, rdd2) = performance {
-      spark.parallelize(1 to slices, slices).map {
+      spark.parallelize(1 to workload, partitions).map {
         slice => do2DOnly(slice, dim)
       }
     }
@@ -107,6 +106,7 @@ object BreezeSparkBenchmark {
       rdd2 map { _.result } reduce (_ + _)
     }
 
+    println(s"dim=${dim}, partitions=${partitions}, nodes=${nodes}, workload=${workload}")
     println(s"rddElapsedTime=${rddElapsedTime}")
     println(s"rdd2ElapsedTime=${rdd2ElapsedTime}")
     println(s"t3dElapsedTime=${t3dElapsedTime}")
