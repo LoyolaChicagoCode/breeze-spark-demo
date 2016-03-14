@@ -106,11 +106,24 @@ object BreezeSparkBenchmark {
       rdd2 map { _.result } reduce (_ + _)
     }
 
-    println(s"dim=${dim}, partitions=${partitions}, nodes=${nodes}, workload=${workload}")
-    println(s"rddElapsedTime=${rddElapsedTime}")
-    println(s"rdd2ElapsedTime=${rdd2ElapsedTime}")
-    println(s"t3dElapsedTime=${t3dElapsedTime}")
-    println(s"t2dElapsedTime=${t2dElapsedTime}")
+    // Write experimental results
+    // The file will be named uniquely by dimensions/nodes/partitions/workload
+
+    var results = Map(
+      "dim" -> s"${dim}",
+      "partitions" -> s"${partitions}",
+      "nodes" -> s"${nodes}",
+      "workload" -> s"${workload}",
+      "rddElapsedTime" -> s"rddElapsedTime=${rddElapsedTime}",
+      "rdd2ElapsedTime" -> s"rdd2ElapsedTime=${rdd2ElapsedTime}",
+      "t3dElapsedTime" -> s"${t3dElapsedTime}",
+      "t2dElapsedTime" -> s"${t2dElapsedTime}"
+    )
+    val resultsFileName = s"results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
+    val writer = new PrintWriter(new File(resultsFileName))
+    val asKeyValText = results map { case (name, value) => s"${name}=${value}" }
+    asKeyValText foreach { text => writer.println(text) }
+    writer.close()
     spark.stop()
   }
 }
