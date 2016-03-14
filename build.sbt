@@ -6,7 +6,7 @@ scalaVersion := "2.10.4"
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked")
 
-mainClass in assembly := Some("edu.luc.cs.LineCount")
+mainClass in assembly := Some("edu.luc.cs.BreezeSparkBenchmark")
 
 resolvers ++= Seq(
   "gkthiruvathukal@bintray" at "http://dl.bintray.com/gkthiruvathukal/maven",
