@@ -30,5 +30,3 @@ Running
 
    --outputdir: Where to write various log files (e.g. node utilization, performance)
 
-   --cacherdd: Whether or not to cache the RDD (disabled by default)
-
