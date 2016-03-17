@@ -14,9 +14,9 @@ package object performance {
   case class Space(m: Long) {
     val memUsed = m.toDouble
     val memUsedGB = memUsed / math.pow(1024.0, 3)
-    val totalMemory = Runtime.getRuntime().totalMemory
+    val totalMemory = Runtime.getRuntime.totalMemory
     val totalGB = totalMemory / math.pow(1024.0, 3)
-    val freeMemory = Runtime.getRuntime().freeMemory
+    val freeMemory = Runtime.getRuntime.freeMemory
     val freeGB = totalMemory / math.pow(1024.0, 3)
 
     override def toString(): String = f"Space(memUsedGB=$memUsedGB%.2f, free=$freeGB%.2f, total=$totalGB%.2f)";
