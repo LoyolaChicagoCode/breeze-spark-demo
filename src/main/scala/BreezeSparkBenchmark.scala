@@ -20,33 +20,29 @@ object BreezeSparkBenchmark extends App {
   val DEFAULT_NODES = 4
   val DEFAULT_PARTITIONS = 48
   val DEFAULT_WORKLOAD = DEFAULT_NODES * DEFAULT_PARTITIONS
+  val DEFAULT_OUTPUT_DIR = "."
+  val DEFAULT_CACHE_POLICY = false
 
   // This is the Scala way of doing a "struct". This allows us to change what is computed 
   // without having to change anything but countLinesInFile()
 
-  case class Results(result: Double, time: Time, space: Space)
+  case class Data(array: Array[DenseMatrix[Double]], time: Time, space: Space, hostname: String)
 
-  case class Config(dim: Option[Int] = None, nodes: Option[Int] = None, partitions: Option[Int] = None, workload: Option[Int] = None)
+  case class Config(dim: Option[Int] = None, nodes: Option[Int] = None, partitions: Option[Int] = None, workload: Option[Int] = None, outputDir: Option[String] = None, cacheRdd: Boolean = false)
 
   // This function is evaluated in parallel via the RDD
 
   def getDoubleMatrix(dim: Int) = DenseMatrix.fill[Double](dim, dim) { math.random }
 
-  def do3D(slice: Int, dim: Int): Results = {
-    val (t3d, m3d, sumTrace2d) = performance {
-      val a = Array.fill(dim)(getDoubleMatrix(dim))
-      a.map { matrix => trace(matrix) }.sum
+  def allocate3D(slice: Int, dim: Int): Data = {
+    val (timeAllocate3D, memAllocate3D, array3D) = performance {
+      Array.fill(dim)(getDoubleMatrix(dim))
     }
-
-    Results(sumTrace2d, t3d, m3d)
+    Data(array3D, timeAllocate3D, memAllocate3D, InetAddress.getLocalHost.getHostName)
   }
 
-  def do2DOnly(slice: Int, dim: Int): Results = {
-    val (time2d, mem2d, trace2d) = performance {
-      val matrix = getDoubleMatrix(dim)
-      trace(matrix)
-    }
-    Results(trace2d, time2d, mem2d)
+  def do3D(a: Data): Double = {
+    a.array.map { matrix => trace(matrix) }.sum
   }
 
   def parseCommandLine(args: Array[String]): Option[Config] = {
@@ -68,6 +64,14 @@ object BreezeSparkBenchmark extends App {
         c.copy(workload = Some(x))
       } text (s"workload is number of matrix operations to do (default $DEFAULT_NODES * $DEFAULT_PARTITIONS)")
 
+      opt[String]('o', "outputdir") action { (x, c) =>
+        c.copy(outputDir = Some(x))
+      } text (s"outputDir is where to write the benchmark results (default $DEFAULT_OUTPUT_DIR)")
+
+      opt[Boolean]('r', "cacherdd") action { (x, c) =>
+        c.copy(cacheRdd = true)
+      } text (s"cache the RDD (default is $DEFAULT_CACHE_POLICY)")
+
       help("help") text ("prints this usage text")
 
     }
@@ -82,31 +86,37 @@ object BreezeSparkBenchmark extends App {
   val partitions = appConfig.partitions.getOrElse(DEFAULT_PARTITIONS)
   val nodes = appConfig.nodes.getOrElse(DEFAULT_NODES)
   val workload = appConfig.workload.getOrElse(nodes * partitions)
+  val cacheRdd = appConfig.cacheRdd
+  val outputDir = appConfig.outputDir.getOrElse(DEFAULT_OUTPUT_DIR)
 
   // create RDD from generated file listing
 
   val (rddElapsedTime, rddMemUsed, rdd) = performance {
     spark.parallelize(1 to workload, partitions).map {
-      slice => do3D(slice, dim)
+      slice => allocate3D(slice, dim)
     }
+  }
+
+  val (rddCacheTime, rddCacheMemUsed, rddCached) = performance {
+    if (cacheRdd) rdd.cache()
   }
 
   val (t3dElapsedTime, t3dMemUsed, trace3dSum) = performance {
-    rdd map { _.result } reduce (_ + _)
+    rdd map { a3d => do3D(a3d) } reduce (_ + _)
   }
 
-  val (rdd2ElapsedTime, rdd2MemUsed, rdd2) = performance {
-    spark.parallelize(1 to workload, partitions).map {
-      slice => do2DOnly(slice, dim)
-    }
-  }
-
-  val (t2dElapsedTime, t2dMemUsed, trace2dSum) = performance {
-    rdd2 map { _.result } reduce (_ + _)
-  }
+  // This is to write information about cluster usage.
+  val nodeFileName = s"${outputDir}/nodes-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
+  val nodeFileWriter = new PrintWriter(new File(resultsFileName))
+  nodeFileWriter.println("Node Usage (on cluster)")
+  val pairs = rdd.map(lc => (lc.hostname, 1))
+  val counts = pairs.reduceByKey((a, b) => a + b)
+  val nodesUsed = counts.collect() foreach nodeFileWriter.println
+  nodeFileWriter.close
 
   // Write experimental results
   // The file will be named uniquely by dimensions/nodes/partitions/workload
+  // TODO: I will move all non-performance output to the log file above.
 
   var results = Map(
     "dim" -> s"${dim}",
@@ -114,11 +124,10 @@ object BreezeSparkBenchmark extends App {
     "nodes" -> s"${nodes}",
     "workload" -> s"${workload}",
     "rddElapsedTime" -> s"rddElapsedTime=${rddElapsedTime}",
-    "rdd2ElapsedTime" -> s"rdd2ElapsedTime=${rdd2ElapsedTime}",
-    "t3dElapsedTime" -> s"${t3dElapsedTime}",
-    "t2dElapsedTime" -> s"${t2dElapsedTime}"
+    "rddCacheTime" -> s"rddCacheTime=${rddCacheTime}",
+    "t3dElapsedTime" -> s"${t3dElapsedTime}"
   )
-  val resultsFileName = s"results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
+  val resultsFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
   val writer = new PrintWriter(new File(resultsFileName))
   val asKeyValText = results map { case (name, value) => s"${name}=${value}" }
   asKeyValText foreach { text => writer.println(text) }

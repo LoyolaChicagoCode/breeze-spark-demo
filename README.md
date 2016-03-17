@@ -28,4 +28,7 @@ Running
 
    --workload: Number of computations you want to do. By default, we use nodes * partitions so there is sufficient work to do per node and (hopefully) take advantage of cores.
 
+   --outputdir: Where to write various log files (e.g. node utilization, performance)
+
+   --cacherdd: Whether or not to cache the RDD (disabled by default)
 
