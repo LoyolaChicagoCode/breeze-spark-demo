@@ -14,13 +14,13 @@ import cs.luc.edu.performance._
 import cs.luc.edu.fileutils._
 import breeze.linalg._
 
-object BreezeSparkBenchmark extends App {
+object BreezeSparkBenchmark {
 
   val DEFAULT_DIMENSION = 2048
   val DEFAULT_NODES = 4
   val DEFAULT_PARTITIONS = 48
   val DEFAULT_WORKLOAD = DEFAULT_NODES * DEFAULT_PARTITIONS
-  val DEFAULT_OUTPUT_DIR = "."
+  val DEFAULT_OUTPUT_DIR = "./results"
   val DEFAULT_CACHE_POLICY = false
 
   // This is the Scala way of doing a "struct". This allows us to change what is computed 
@@ -28,7 +28,7 @@ object BreezeSparkBenchmark extends App {
 
   case class Data(array: Array[DenseMatrix[Double]], time: Time, space: Space, hostname: String)
 
-  case class Config(dim: Option[Int] = None, nodes: Option[Int] = None, partitions: Option[Int] = None, workload: Option[Int] = None, outputDir: Option[String] = None, cacheRdd: Boolean = false)
+  case class Config(dim: Option[Int] = None, nodes: Option[Int] = None, partitions: Option[Int] = None, workload: Option[Int] = None, outputDir: Option[String] = None)
 
   // This function is evaluated in parallel via the RDD
 
@@ -68,10 +68,6 @@ object BreezeSparkBenchmark extends App {
         c.copy(outputDir = Some(x))
       } text (s"outputDir is where to write the benchmark results (default $DEFAULT_OUTPUT_DIR)")
 
-      opt[Boolean]('r', "cacherdd") action { (x, c) =>
-        c.copy(cacheRdd = true)
-      } text (s"cache the RDD (default is $DEFAULT_CACHE_POLICY)")
-
       help("help") text ("prints this usage text")
 
     }
@@ -79,58 +75,56 @@ object BreezeSparkBenchmark extends App {
     parser.parse(args, Config())
   }
 
-  val conf = new SparkConf().setAppName("LinearAlgebra File I/O")
-  val spark = new SparkContext(conf)
-  val appConfig = parseCommandLine(args).getOrElse(Config())
-  val dim = appConfig.dim.getOrElse(DEFAULT_DIMENSION)
-  val partitions = appConfig.partitions.getOrElse(DEFAULT_PARTITIONS)
-  val nodes = appConfig.nodes.getOrElse(DEFAULT_NODES)
-  val workload = appConfig.workload.getOrElse(nodes * partitions)
-  val cacheRdd = appConfig.cacheRdd
-  val outputDir = appConfig.outputDir.getOrElse(DEFAULT_OUTPUT_DIR)
+  def main(args: Array[String]) = go(args)
 
-  // create RDD from generated file listing
+  def go(args: Array[String]) = {
+    val conf = new SparkConf().setAppName("LinearAlgebra File I/O")
+    val spark = new SparkContext(conf)
+    val appConfig = parseCommandLine(args) getOrElse (Config())
+    val dim = appConfig.dim.getOrElse(DEFAULT_DIMENSION)
+    val partitions = appConfig.partitions.getOrElse(DEFAULT_PARTITIONS)
+    val nodes = appConfig.nodes.getOrElse(DEFAULT_NODES)
+    val workload = appConfig.workload.getOrElse(nodes * partitions)
+    val outputDir = appConfig.outputDir.getOrElse(DEFAULT_OUTPUT_DIR)
 
-  val (rddElapsedTime, rddMemUsed, rdd) = performance {
-    spark.parallelize(1 to workload, partitions).map {
-      slice => allocate3D(slice, dim)
+    // create RDD from generated file listing
+
+    val (rddElapsedTime, rddMemUsed, rdd) = performance {
+      spark.parallelize(1 to workload, partitions).map {
+        slice => allocate3D(slice, dim)
+      }
     }
+
+    val (t3dElapsedTime, t3dMemUsed, trace3dSum) = performance {
+      rdd map { a3d => do3D(a3d) } reduce (_ + _)
+    }
+
+    // This is to write information about cluster usage.
+    val nodeFileName = s"${outputDir}/nodes-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
+    val nodeFileWriter = new PrintWriter(new File(nodeFileName))
+    nodeFileWriter.println("Node Usage (on cluster)")
+    val pairs = rdd.map(lc => (lc.hostname, 1))
+    val counts = pairs.reduceByKey((a, b) => a + b)
+    val nodesUsed = counts.collect() foreach nodeFileWriter.println
+    nodeFileWriter.close
+
+    // Write experimental results
+    // The file will be named uniquely by dimensions/nodes/partitions/workload
+    // TODO: I will move all non-performance output to the log file above.
+
+    var results = Map(
+      "dim" -> s"${dim}",
+      "partitions" -> s"${partitions}",
+      "nodes" -> s"${nodes}",
+      "workload" -> s"${workload}",
+      "rddElapsedTime" -> s"rddElapsedTime=${rddElapsedTime}",
+      "t3dElapsedTime" -> s"${t3dElapsedTime}"
+    )
+    val resultsFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
+    val writer = new PrintWriter(new File(resultsFileName))
+    val asKeyValText = results map { case (name, value) => s"${name}=${value}" }
+    asKeyValText foreach { text => writer.println(text) }
+    writer.close()
+    spark.stop()
   }
-
-  val (rddCacheTime, rddCacheMemUsed, rddCached) = performance {
-    if (cacheRdd) rdd.cache()
-  }
-
-  val (t3dElapsedTime, t3dMemUsed, trace3dSum) = performance {
-    rdd map { a3d => do3D(a3d) } reduce (_ + _)
-  }
-
-  // This is to write information about cluster usage.
-  val nodeFileName = s"${outputDir}/nodes-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
-  val nodeFileWriter = new PrintWriter(new File(resultsFileName))
-  nodeFileWriter.println("Node Usage (on cluster)")
-  val pairs = rdd.map(lc => (lc.hostname, 1))
-  val counts = pairs.reduceByKey((a, b) => a + b)
-  val nodesUsed = counts.collect() foreach nodeFileWriter.println
-  nodeFileWriter.close
-
-  // Write experimental results
-  // The file will be named uniquely by dimensions/nodes/partitions/workload
-  // TODO: I will move all non-performance output to the log file above.
-
-  var results = Map(
-    "dim" -> s"${dim}",
-    "partitions" -> s"${partitions}",
-    "nodes" -> s"${nodes}",
-    "workload" -> s"${workload}",
-    "rddElapsedTime" -> s"rddElapsedTime=${rddElapsedTime}",
-    "rddCacheTime" -> s"rddCacheTime=${rddCacheTime}",
-    "t3dElapsedTime" -> s"${t3dElapsedTime}"
-  )
-  val resultsFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
-  val writer = new PrintWriter(new File(resultsFileName))
-  val asKeyValText = results map { case (name, value) => s"${name}=${value}" }
-  asKeyValText foreach { text => writer.println(text) }
-  writer.close()
-  spark.stop()
 }
