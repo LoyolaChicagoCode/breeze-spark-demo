@@ -14,7 +14,7 @@ import cs.luc.edu.performance._
 import cs.luc.edu.fileutils._
 import breeze.linalg._
 
-object BreezeSparkBenchmark {
+object BreezeSparkBenchmark extends App {
 
   val DEFAULT_DIMENSION = 2048
   val DEFAULT_NODES = 4
@@ -75,55 +75,53 @@ object BreezeSparkBenchmark {
     parser.parse(args, Config())
   }
 
-  def main(args: Array[String]) {
-    val conf = new SparkConf().setAppName("LinearAlgebra File I/O")
-    val spark = new SparkContext(conf)
-    val appConfig = parseCommandLine(args).getOrElse(Config())
-    val dim = appConfig.dim.getOrElse(DEFAULT_DIMENSION)
-    val partitions = appConfig.partitions.getOrElse(DEFAULT_PARTITIONS)
-    val nodes = appConfig.nodes.getOrElse(DEFAULT_NODES)
-    val workload = appConfig.workload.getOrElse(nodes * partitions)
+  val conf = new SparkConf().setAppName("LinearAlgebra File I/O")
+  val spark = new SparkContext(conf)
+  val appConfig = parseCommandLine(args).getOrElse(Config())
+  val dim = appConfig.dim.getOrElse(DEFAULT_DIMENSION)
+  val partitions = appConfig.partitions.getOrElse(DEFAULT_PARTITIONS)
+  val nodes = appConfig.nodes.getOrElse(DEFAULT_NODES)
+  val workload = appConfig.workload.getOrElse(nodes * partitions)
 
-    // create RDD from generated file listing
+  // create RDD from generated file listing
 
-    val (rddElapsedTime, rddMemUsed, rdd) = performance {
-      spark.parallelize(1 to workload, partitions).map {
-        slice => do3D(slice, dim)
-      }
+  val (rddElapsedTime, rddMemUsed, rdd) = performance {
+    spark.parallelize(1 to workload, partitions).map {
+      slice => do3D(slice, dim)
     }
-
-    val (t3dElapsedTime, t3dMemUsed, trace3dSum) = performance {
-      rdd map { _.result } reduce (_ + _)
-    }
-
-    val (rdd2ElapsedTime, rdd2MemUsed, rdd2) = performance {
-      spark.parallelize(1 to workload, partitions).map {
-        slice => do2DOnly(slice, dim)
-      }
-    }
-
-    val (t2dElapsedTime, t2dMemUsed, trace2dSum) = performance {
-      rdd2 map { _.result } reduce (_ + _)
-    }
-
-    // Write experimental results
-    // The file will be named uniquely by dimensions/nodes/partitions/workload
-
-    var results = Map(
-      "dim" -> s"${dim}",
-      "partitions" -> s"${partitions}",
-      "nodes" -> s"${nodes}",
-      "workload" -> s"${workload}",
-      "rddElapsedTime" -> s"rddElapsedTime=${rddElapsedTime}",
-      "rdd2ElapsedTime" -> s"rdd2ElapsedTime=${rdd2ElapsedTime}",
-      "t3dElapsedTime" -> s"${t3dElapsedTime}",
-      "t2dElapsedTime" -> s"${t2dElapsedTime}"
-    )
-    val resultsFileName = s"results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
-    val writer = new PrintWriter(new File(resultsFileName))
-    val asKeyValText = results map { case (name, value) => s"${name}=${value}" }
-    asKeyValText foreach { text => writer.println(text) }
-    writer.close()
-    spark.stop()
   }
+
+  val (t3dElapsedTime, t3dMemUsed, trace3dSum) = performance {
+    rdd map { _.result } reduce (_ + _)
+  }
+
+  val (rdd2ElapsedTime, rdd2MemUsed, rdd2) = performance {
+    spark.parallelize(1 to workload, partitions).map {
+      slice => do2DOnly(slice, dim)
+    }
+  }
+
+  val (t2dElapsedTime, t2dMemUsed, trace2dSum) = performance {
+    rdd2 map { _.result } reduce (_ + _)
+  }
+
+  // Write experimental results
+  // The file will be named uniquely by dimensions/nodes/partitions/workload
+
+  var results = Map(
+    "dim" -> s"${dim}",
+    "partitions" -> s"${partitions}",
+    "nodes" -> s"${nodes}",
+    "workload" -> s"${workload}",
+    "rddElapsedTime" -> s"rddElapsedTime=${rddElapsedTime}",
+    "rdd2ElapsedTime" -> s"rdd2ElapsedTime=${rdd2ElapsedTime}",
+    "t3dElapsedTime" -> s"${t3dElapsedTime}",
+    "t2dElapsedTime" -> s"${t2dElapsedTime}"
+  )
+  val resultsFileName = s"results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
+  val writer = new PrintWriter(new File(resultsFileName))
+  val asKeyValText = results map { case (name, value) => s"${name}=${value}" }
+  asKeyValText foreach { text => writer.println(text) }
+  writer.close()
+  spark.stop()
 }

@@ -13,8 +13,8 @@ package object fileutils {
 
   def getFileList(path: String, ext: String): Array[String] = {
     require { ext.startsWith(".") }
-    val fullPath = new File(path).getAbsolutePath()
-    recursiveListFiles(new File(fullPath)).filter(f => f.getName().endsWith(ext)).map(_.getAbsolutePath())
+    val fullPath = new File(path).getAbsolutePath
+    recursiveListFiles(new File(fullPath)).filter(_.getName.endsWith(ext)).map(_.getAbsolutePath)
   }
 
 }
