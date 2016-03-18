@@ -93,28 +93,38 @@ object BreezeSparkBenchmark {
       rdd map { _.result } reduce (_ + _)
     }
 
-    val nodeFileName = s"${outputDir}/nodes-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
-    val nodeFileWriter = new PrintWriter(new File(nodeFileName))
-    nodeFileWriter.println("Node Usage (on cluster)")
-    val pairs = rdd.map(lc => (lc.hostname, 1))
-    val counts = pairs.reduceByKey((a, b) => a + b)
-    val nodesUsed = counts.collect() foreach nodeFileWriter.println
-    nodeFileWriter.close
+    writeNodeUsageReport
+    writePerformanceReport
+    spark.stop
 
-    var results = Map(
-      "dim" -> s"${dim}",
-      "partitions" -> s"${partitions}",
-      "nodes" -> s"${nodes}",
-      "workload" -> s"${workload}",
-      "outputDir" -> s"${outputDir}",
-      "rddElapsedTime" -> s"rddElapsedTime=${rddElapsedTime}",
-      "t3dElapsedTime" -> s"${t3dElapsedTime}"
-    )
-    val resultsFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
-    val writer = new PrintWriter(new File(resultsFileName))
-    val asKeyValText = results map { case (name, value) => s"${name}=${value}" }
-    asKeyValText foreach { text => writer.println(text) }
-    writer.close()
-    spark.stop()
+    // End of computation
+
+    def writeNodeUsageReport() = {
+      val nodeFileName = s"${outputDir}/nodes-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
+      val nodeFileWriter = new PrintWriter(new File(nodeFileName))
+      nodeFileWriter.println("Node Usage (on cluster)")
+      val pairs = rdd.map(lc => (lc.hostname, 1))
+      val counts = pairs.reduceByKey((a, b) => a + b)
+      val nodesUsed = counts.collect() foreach nodeFileWriter.println
+      nodeFileWriter.close
+    }
+
+    def writePerformanceReport() = {
+      var results = Map(
+        "dim" -> s"${dim}",
+        "partitions" -> s"${partitions}",
+        "nodes" -> s"${nodes}",
+        "workload" -> s"${workload}",
+        "outputDir" -> s"${outputDir}",
+        "rddElapsedTime" -> s"rddElapsedTime=${rddElapsedTime}",
+        "t3dElapsedTime" -> s"${t3dElapsedTime}"
+      )
+      val resultsFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
+      val writer = new PrintWriter(new File(resultsFileName))
+      val asKeyValText = results map { case (name, value) => s"${name}=${value}" }
+      asKeyValText foreach { text => writer.println(text) }
+      writer.close
+    }
+
   }
 }
