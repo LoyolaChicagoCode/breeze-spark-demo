@@ -111,13 +111,13 @@ object BreezeSparkBenchmark {
 
     def writePerformanceReport() = {
       var results = Map(
-        "dim" -> s"${dim}",
-        "partitions" -> s"${partitions}",
-        "nodes" -> s"${nodes}",
-        "workload" -> s"${workload}",
-        "outputDir" -> s"${outputDir}",
-        "rddGenerationPhase.time" -> s"${rddGenerationPhase.time}",
-        "rddReducePhase.time" -> s"${rddReducePhase.time}"
+        "dim" -> dim.toString,
+        "partitions" -> partitions.toString,
+        "nodes" -> nodes.toString,
+        "workload" -> workload.toString,
+        "outputDir" -> outputDir.toString,
+        "rddGenerationPhase.time" -> rddGenerationPhase.time.toString,
+        "rddReducePhase.time" -> rddReducePhase.time.toString
       )
       val resultsFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
       val writer = new PrintWriter(new File(resultsFileName))
