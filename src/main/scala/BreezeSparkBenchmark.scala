@@ -33,13 +33,11 @@ object BreezeSparkBenchmark {
   def getDoubleMatrix(dim: Int) = DenseMatrix.fill[Double](dim, dim) { math.random }
 
   def sumOfTraces3D(slice: Int, dim: Int): Data = {
-    val (timeAllocate3D, memAllocate3D, array3D) = performance {
-      Array.fill(dim)(getDoubleMatrix(dim))
-    }
-    val (timeTrace3D, memTrace3D, traceResult) = performance {
-      array3D.map { matrix => trace(matrix) }.sum
-    }
-    Data(traceResult, timeAllocate3D + timeTrace3D, memAllocate3D, InetAddress.getLocalHost.getHostName)
+    val createPhase = performance { Array.fill(dim)(getDoubleMatrix(dim)) }
+    val computePhase = performance { createPhase.result.map { matrix => trace(matrix) }.sum }
+
+    Data(computePhase.result, createPhase.time + computePhase.time, createPhase.space,
+      InetAddress.getLocalHost.getHostName)
   }
 
   def parseCommandLine(args: Array[String]): Option[Config] = {
@@ -83,13 +81,15 @@ object BreezeSparkBenchmark {
     val workload = appConfig.workload.get
     val outputDir = appConfig.outputDir.get
 
-    val (rddElapsedTime, rddMemUsed, rdd) = performance {
+    val rddGenerationPhase = performance {
       spark.parallelize(1 to workload, partitions).map {
         slice => sumOfTraces3D(slice, dim)
       }
     }
 
-    val (t3dElapsedTime, t3dMemUsed, trace3dSum) = performance {
+    val rdd = rddGenerationPhase.result
+
+    val rddReducePhase = performance {
       rdd map { _.result } reduce (_ + _)
     }
 
@@ -116,8 +116,8 @@ object BreezeSparkBenchmark {
         "nodes" -> s"${nodes}",
         "workload" -> s"${workload}",
         "outputDir" -> s"${outputDir}",
-        "rddElapsedTime" -> s"rddElapsedTime=${rddElapsedTime}",
-        "t3dElapsedTime" -> s"${t3dElapsedTime}"
+        "rddGenerationPhase.time" -> s"${rddGenerationPhase.time}",
+        "rddReducePhase.time" -> s"${rddReducePhase.time}"
       )
       val resultsFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
       val writer = new PrintWriter(new File(resultsFileName))
@@ -125,6 +125,5 @@ object BreezeSparkBenchmark {
       asKeyValText foreach { text => writer.println(text) }
       writer.close
     }
-
   }
 }

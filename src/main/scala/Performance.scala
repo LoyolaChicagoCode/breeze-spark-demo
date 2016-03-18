@@ -24,7 +24,11 @@ package object performance {
   // time a block of Scala code - useful for timing everything!
   // return a Time object so we can obtain the time in desired units
 
-  def performance[R](block: => R): (Time, Space, R) = {
+  sealed abstract class Perf
+
+  case class PerfData[T](time: Time, space: Space, result: T)
+
+  def performance[R](block: => R): PerfData[R] = {
     val t0 = System.nanoTime()
     val m0 = Runtime.getRuntime.freeMemory
     // This executes the block and captures its result
@@ -34,6 +38,6 @@ package object performance {
     val m1 = Runtime.getRuntime.freeMemory
     val deltaT = t1 - t0
     val deltaM = m0 - m1
-    (Time(deltaT), Space(deltaM), result)
+    PerfData(Time(deltaT), Space(deltaM), result)
   }
 }
