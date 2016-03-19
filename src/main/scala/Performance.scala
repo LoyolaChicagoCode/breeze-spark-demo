@@ -27,6 +27,13 @@ package object performance {
     // scalastyle:on
 
     override def toString(): String = f"Time(t=$t%.2f, ns=$nanoseconds%d, ms=$milliseconds%d)";
+
+    def toXML(): xml.Elem = {
+      val rawText = f"$t%.2f"
+      val nsText = f"$nanoseconds%d"
+      val msText = f"$milliseconds%d"
+      <time raw={ rawText } nanoseconds={ nsText } milliseconds={ msText }/>
+    }
   }
 
   case class Space(m: Long) {

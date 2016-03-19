@@ -111,8 +111,8 @@ object BreezeSparkBenchmark {
       rdd map { _.result } reduce (_ + _)
     }
 
-    writeNodeUsageReport
-    //writePerformanceReport
+    //writeNodeUsageReport
+    writePerformanceReport
     spark.stop
 
     // End of computation
@@ -135,8 +135,8 @@ object BreezeSparkBenchmark {
       paramsNB += <param name="outputdir"> { outputDir } </param>
 
       val resultsNB = new xml.NodeBuffer
-      resultsNB += <perf name="rdd generation time"> { rddGenerationPhase.time } </perf>
-      resultsNB += <perf name="rdd reduce time"> { rddReducePhase.time } </perf>
+      resultsNB += <perf name="rdd generation time"> { rddGenerationPhase.time.toXML } </perf>
+      resultsNB += <perf name="rdd reduce time"> { rddReducePhase.time.toXML } </perf>
 
       val paramsXML = <params> { paramsNB } </params>
       val resultsXML = <perfresults> { resultsNB } </perfresults>
@@ -144,9 +144,9 @@ object BreezeSparkBenchmark {
 
       val xmlFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.xml"
       val writer = new PrintWriter(new File(xmlFileName))
-      val printer = new scala.xml.PrettyPrinter(80, 2)
-      val prettyXML = printer.format(rootXMLNode)
-      writer.println(prettyXML)
+      val pprinter = new scala.xml.PrettyPrinter(80, 2) // scalastyle:ignore
+      val prettyXML = pprinter.format(rootXMLNode)
+      writer.println(prettyXML) // scalastyle:ignore
       writer.close
     }
   }
