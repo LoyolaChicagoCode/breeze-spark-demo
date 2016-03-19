@@ -1,3 +1,19 @@
+// Copyright (C) 2016-Present by George K Thiruvathukal.
+// See the LICENCE.txt file distributed with this work for additional
+// information regarding copyright ownership.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package edu.luc.cs
 
 import java.io._
@@ -30,7 +46,7 @@ object BreezeSparkBenchmark {
 
   // Use Breeze DenseMatrix for the layers in the 3D array.
 
-  def getDoubleMatrix(dim: Int) = DenseMatrix.fill[Double](dim, dim) { math.random }
+  def getDoubleMatrix(dim: Int) : DenseMatrix[Double]= DenseMatrix.fill[Double](dim, dim) { math.random }
 
   def sumOfTraces3D(slice: Int, dim: Int): Data = {
     val createPhase = performance { Array.fill(dim)(getDoubleMatrix(dim)) }
@@ -68,9 +84,11 @@ object BreezeSparkBenchmark {
     parser.parse(args, Config())
   }
 
-  def main(args: Array[String]) = go(args)
+  def main(args: Array[String]) : Unit = go(args)
 
-  def go(args: Array[String]) = {
+  // scalastyle:off check.length
+
+  def go(args: Array[String]) : Unit = {
     val conf = new SparkConf().setAppName("LinearAlgebra File I/O")
     val spark = new SparkContext(conf)
 
@@ -102,10 +120,10 @@ object BreezeSparkBenchmark {
     def writeNodeUsageReport() = {
       val nodeFileName = s"${outputDir}/nodes-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
       val nodeFileWriter = new PrintWriter(new File(nodeFileName))
-      nodeFileWriter.println("Node Usage (on cluster)")
+      nodeFileWriter.println("Node Usage (on cluster)") // scalastyle:ignore
       val pairs = rdd.map(lc => (lc.hostname, 1))
       val counts = pairs.reduceByKey((a, b) => a + b)
-      val nodesUsed = counts.collect() foreach nodeFileWriter.println
+      val nodesUsed = counts.collect() foreach nodeFileWriter.println // scalastyle:ignore
       nodeFileWriter.close
     }
 
@@ -122,8 +140,9 @@ object BreezeSparkBenchmark {
       val resultsFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
       val writer = new PrintWriter(new File(resultsFileName))
       val asKeyValText = results map { case (name, value) => s"${name}=${value}" }
-      asKeyValText foreach { text => writer.println(text) }
+      asKeyValText foreach { text => writer.println(text) } // scalastyle:ignore  
       writer.close
     }
   }
+  // scalastyle:on check.length
 }

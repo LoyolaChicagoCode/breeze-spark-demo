@@ -8,7 +8,7 @@
  </check>
  <check level="warning" class="org.scalastyle.file.HeaderMatchesChecker" enabled="true">
   <parameters>
-   <parameter name="header"><![CDATA[// Copyright (C) 2011-2012 the original author or authors.
+   <parameter name="header"><![CDATA[// Copyright (C) 2016-Present by George K Thiruvathukal.
 // See the LICENCE.txt file distributed with this work for additional
 // information regarding copyright ownership.
 //
@@ -96,7 +96,7 @@
    <parameter name="doubleLineAllowed"><![CDATA[false]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.MethodLengthChecker" enabled="true">
+ <check level="warning" class="org.scalastyle.scalariform.MethodLengthChecker" enabled="true" customId="check.length">
   <parameters>
    <parameter name="maxLength"><![CDATA[50]]></parameter>
   </parameters>
