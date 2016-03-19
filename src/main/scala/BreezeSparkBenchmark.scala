@@ -128,24 +128,24 @@ object BreezeSparkBenchmark {
     }
 
     def writePerformanceReport() = {
-      val paramsNB = new xml.NodeBuffer
-      paramsNB += <param name="dim"> { dim } </param>
-      paramsNB += <param name="partitions"> { partitions } </param>
-      paramsNB += <param name="nodes"> { nodes } </param>
-      paramsNB += <param name="outputdir"> { outputDir } </param>
+      val paramNodes = Seq(
+        <param name="dim"> { dim } </param>
+        <param name="partitions"> { partitions } </param>
+        <param name="nodes"> { nodes } </param>
+        <param name="outputdir"> { outputDir } </param>
+      )
 
-      val resultsNB = new xml.NodeBuffer
-      resultsNB += <perf name="rdd generation time"> { rddGenerationPhase.time.toXML } </perf>
-      resultsNB += <perf name="rdd reduce time"> { rddReducePhase.time.toXML } </perf>
-
-      val paramsXML = <params> { paramsNB } </params>
-      val resultsXML = <perfresults> { resultsNB } </perfresults>
-      val rootXMLNode = <results> { paramsXML } { resultsXML } </results>
-
+      val resultNodes = Seq(
+        <performance name="rdd generation time"> { rddGenerationPhase.time.toXML } </performance>
+        <performance name="rdd reduce time"> { rddReducePhase.time.toXML } </performance>
+      )
+      val params = <parameters> { paramNodes } </parameters>
+      val results = <results> { resultNodes } </results>
+      val xmlDocument = <run> { params } { results } </run>
       val xmlFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.xml"
       val writer = new PrintWriter(new File(xmlFileName))
       val pprinter = new scala.xml.PrettyPrinter(80, 2) // scalastyle:ignore
-      val prettyXML = pprinter.format(rootXMLNode)
+      val prettyXML = pprinter.format(xmlDocument)
       writer.println(prettyXML) // scalastyle:ignore
       writer.close
     }
