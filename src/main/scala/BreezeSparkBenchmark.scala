@@ -46,7 +46,7 @@ object BreezeSparkBenchmark {
 
   // Use Breeze DenseMatrix for the layers in the 3D array.
 
-  def getDoubleMatrix(dim: Int) : DenseMatrix[Double]= DenseMatrix.fill[Double](dim, dim) { math.random }
+  def getDoubleMatrix(dim: Int): DenseMatrix[Double] = DenseMatrix.fill[Double](dim, dim) { math.random }
 
   def sumOfTraces3D(slice: Int, dim: Int): Data = {
     val createPhase = performance { Array.fill(dim)(getDoubleMatrix(dim)) }
@@ -84,11 +84,11 @@ object BreezeSparkBenchmark {
     parser.parse(args, Config())
   }
 
-  def main(args: Array[String]) : Unit = go(args)
+  def main(args: Array[String]): Unit = go(args)
 
   // scalastyle:off check.length
 
-  def go(args: Array[String]) : Unit = {
+  def go(args: Array[String]): Unit = {
     val conf = new SparkConf().setAppName("LinearAlgebra File I/O")
     val spark = new SparkContext(conf)
 
@@ -112,7 +112,7 @@ object BreezeSparkBenchmark {
     }
 
     writeNodeUsageReport
-    writePerformanceReport
+    //writePerformanceReport
     spark.stop
 
     // End of computation
@@ -128,19 +128,25 @@ object BreezeSparkBenchmark {
     }
 
     def writePerformanceReport() = {
-      var results = Map(
-        "dim" -> dim.toString,
-        "partitions" -> partitions.toString,
-        "nodes" -> nodes.toString,
-        "workload" -> workload.toString,
-        "outputDir" -> outputDir.toString,
-        "rddGenerationPhase.time" -> rddGenerationPhase.time.toString,
-        "rddReducePhase.time" -> rddReducePhase.time.toString
-      )
-      val resultsFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
-      val writer = new PrintWriter(new File(resultsFileName))
-      val asKeyValText = results map { case (name, value) => s"${name}=${value}" }
-      asKeyValText foreach { text => writer.println(text) } // scalastyle:ignore  
+      val paramsNB = new xml.NodeBuffer
+      paramsNB += <param name="dim"> { dim } </param>
+      paramsNB += <param name="partitions"> { partitions } </param>
+      paramsNB += <param name="nodes"> { nodes } </param>
+      paramsNB += <param name="outputdir"> { outputDir } </param>
+
+      val resultsNB = new xml.NodeBuffer
+      resultsNB += <perf name="rdd generation time"> { rddGenerationPhase.time } </perf>
+      resultsNB += <perf name="rdd reduce time"> { rddReducePhase.time } </perf>
+
+      val paramsXML = <params> { paramsNB } </params>
+      val resultsXML = <perfresults> { resultsNB } </perfresults>
+      val rootXMLNode = <results> { paramsXML } { resultsXML } </results>
+
+      val xmlFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.xml"
+      val writer = new PrintWriter(new File(xmlFileName))
+      val printer = new scala.xml.PrettyPrinter(80, 2)
+      val prettyXML = printer.format(rootXMLNode)
+      writer.println(prettyXML)
       writer.close
     }
   }
