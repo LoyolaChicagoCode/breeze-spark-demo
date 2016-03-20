@@ -142,7 +142,7 @@ object BreezeSparkBenchmark {
       val params = <parameters> { paramNodes } </parameters>
       val results = <results> { resultNodes } </results>
       val xmlDocument = <run> { params } { results } </run>
-      val xmlFileName = s"${outputDir}/results-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.xml"
+      val xmlFileName = f"$outputDir/perf-d$dim%04d-n$nodes%04d-p$partitions%04d-w$workload%04d.xml"
       val writer = new PrintWriter(new File(xmlFileName))
       val pprinter = new scala.xml.PrettyPrinter(80, 2) // scalastyle:ignore
       val prettyXML = pprinter.format(xmlDocument)
