@@ -15,14 +15,24 @@ all:
 assembly:
 	sbt assembly
 
+slowclean:
+	sbt clean
+	find . -type d -name target -print | xargs rm -rf
 
 fastclean:
-	find . -type d -name target -print | xargs rm -rf
 	rm -f *.error *.cobaltlog *.output
-	
+	rm -f ~/logs/*
+
 clean:
-	sbt clean
+	make slowclean
 	make fastclean
+
+#
+# Note: These are rather specific to my environment.
+# Try make submit if you have your own cluster.
 
 submit:
 	$(SPARK_HOME)/bin/spark-submit --master $(SPARK_MASTER_URI) target/scala-2.10/demo-breeze-spark-scala-assembly-1.0.jar --dim $(DIM) --nodes $(NODES) --partitions $(PARTITIONS) --workload $(WORKLOAD) --outputdir $(LOGDIR)
+
+cooley:
+	./scripts/run-cooley.sh
