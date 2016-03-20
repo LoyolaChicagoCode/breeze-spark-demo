@@ -111,14 +111,14 @@ object BreezeSparkBenchmark {
       rdd map { _.result } reduce (_ + _)
     }
 
-    //writeNodeUsageReport
+    writeNodeUsageReport
     writePerformanceReport
     spark.stop
 
     // End of computation
 
     def writeNodeUsageReport() = {
-      val nodeFileName = s"${outputDir}/nodes-dim=${dim}-nodes=${nodes}-partitions=${partitions}-workload=${workload}.txt"
+      val nodeFileName = f"$outputDir/perf-d$dim%04d-n$nodes%04d-p$partitions%04d-w$workload%04d.txt"
       val nodeFileWriter = new PrintWriter(new File(nodeFileName))
       nodeFileWriter.println("Node Usage (on cluster)") // scalastyle:ignore
       val pairs = rdd.map(lc => (lc.hostname, 1))
@@ -128,25 +128,23 @@ object BreezeSparkBenchmark {
     }
 
     def writePerformanceReport() = {
-      val paramNodes = Seq(
-        <param name="dim"> { dim } </param>
-        <param name="partitions"> { partitions } </param>
-        <param name="nodes"> { nodes } </param>
-        <param name="outputdir"> { outputDir } </param>
-      )
+      val document = <run>
+                       <parameters>
+                         <param name="dim"> { dim } </param>
+                         <param name="partitions"> { partitions } </param>
+                         <param name="nodes"> { nodes } </param>
+                         <param name="outputdir"> { outputDir } </param>
+                       </parameters>
+                       <results>
+                         <performance name="rdd generation time"> { rddGenerationPhase.time.toXML } </performance>
+                         <performance name="rdd reduce time"> { rddReducePhase.time.toXML } </performance>
+                       </results>
+                     </run>
 
-      val resultNodes = Seq(
-        <performance name="rdd generation time"> { rddGenerationPhase.time.toXML } </performance>
-        <performance name="rdd reduce time"> { rddReducePhase.time.toXML } </performance>
-      )
-      val params = <parameters> { paramNodes } </parameters>
-      val results = <results> { resultNodes } </results>
-      val xmlDocument = <run> { params } { results } </run>
       val xmlFileName = f"$outputDir/perf-d$dim%04d-n$nodes%04d-p$partitions%04d-w$workload%04d.xml"
       val writer = new PrintWriter(new File(xmlFileName))
       val pprinter = new scala.xml.PrettyPrinter(80, 2) // scalastyle:ignore
-      val prettyXML = pprinter.format(xmlDocument)
-      writer.println(prettyXML) // scalastyle:ignore
+      writer.println(pprinter.format(document)) // scalastyle:ignore
       writer.close
     }
   }
