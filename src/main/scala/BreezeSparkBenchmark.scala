@@ -111,23 +111,20 @@ object BreezeSparkBenchmark {
       rdd map { _.result } reduce (_ + _)
     }
 
-    writeNodeUsageReport
     writePerformanceReport
     spark.stop
 
     // End of computation
 
-    def writeNodeUsageReport() = {
-      val nodeFileName = f"$outputDir/perf-d$dim%04d-n$nodes%04d-p$partitions%04d-w$workload%04d.txt"
-      val nodeFileWriter = new PrintWriter(new File(nodeFileName))
-      nodeFileWriter.println("Node Usage (on cluster)") // scalastyle:ignore
+    def getNodeUsageXML() : xml.Node = {
       val pairs = rdd.map(lc => (lc.hostname, 1))
       val counts = pairs.reduceByKey((a, b) => a + b)
-      val nodesUsed = counts.collect() foreach nodeFileWriter.println // scalastyle:ignore
-      nodeFileWriter.close
+
+      val nodesUsed = counts.collect()
+      nodesUsed map { case (hostname, count) => <node name={ hostname } workload="{count}"/> }
     }
 
-    def writePerformanceReport() = {
+    def writePerformanceReport() : Unit = {
       val document = <run>
                        <parameters>
                          <param name="dim"> { dim } </param>
@@ -136,9 +133,16 @@ object BreezeSparkBenchmark {
                          <param name="outputdir"> { outputDir } </param>
                        </parameters>
                        <results>
-                         <performance name="rdd generation time"> { rddGenerationPhase.time.toXML } </performance>
-                         <performance name="rdd reduce time"> { rddReducePhase.time.toXML } </performance>
+                         <performance name="rdd generation time">
+                           { rddGenerationPhase.time.toXML }
+                         </performance>
+                         <performance name="rdd reduce time">
+                           { rddReducePhase.time.toXML }
+                         </performance>
                        </results>
+                       <nodes>
+                         { getNodeUsageXML }
+                       </nodes>
                      </run>
 
       val xmlFileName = f"$outputDir/perf-d$dim%04d-n$nodes%04d-p$partitions%04d-w$workload%04d.xml"
