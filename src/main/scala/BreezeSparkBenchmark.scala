@@ -116,15 +116,15 @@ object BreezeSparkBenchmark {
 
     // End of computation
 
-    def getNodeUsageXML() : xml.Node = {
+    def getNodeUsageXML() = {
       val pairs = rdd.map(lc => (lc.hostname, 1))
       val counts = pairs.reduceByKey((a, b) => a + b)
 
       val nodesUsed = counts.collect()
-      nodesUsed map { case (hostname, count) => <node name={ hostname } workload="{count}"/> }
+      nodesUsed map { case (hostname, count) => <node name={ hostname } workload={ count.toString }/> }
     }
 
-    def writePerformanceReport() : Unit = {
+    def writePerformanceReport() = {
       val document = <run>
                        <parameters>
                          <param name="dim"> { dim } </param>
