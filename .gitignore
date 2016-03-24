@@ -24,3 +24,7 @@ scala-2.11/
 *.cobaltlog
 *.error
 *.output
+
+# generated scripts
+
+generated/
