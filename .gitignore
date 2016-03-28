@@ -20,6 +20,10 @@ scala-2.11/
 .worksheet
 .idea/
 
+# Python
+
+*.pyc
+
 # cluster files
 *.cobaltlog
 *.error
@@ -28,3 +32,5 @@ scala-2.11/
 # generated scripts
 
 generated/
+
+
