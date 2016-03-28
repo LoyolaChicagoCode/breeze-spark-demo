@@ -1,11 +1,10 @@
 SCRIPT_HEADER="""#!/bin/bash
-
+#
 # This script is generated. Do not edit.
-
+#
 """
 
 SPARK_INIT="""
-
 #
 # Start Apache Spark on the allocated nodes
 #
@@ -13,7 +12,6 @@ SPARK_INIT="""
 JOB_LOG=$HOME/logs/log.$COBALT_JOBID
 
 echo "starting job $COBALT_JOBID" > $JOB_LOG
-
 echo "starting spark..." >> $JOB_LOG
 pushd $HOME/code/spark
 cat $COBALT_NODEFILE > conf/slaves
@@ -31,12 +29,10 @@ echo "export SPARK_MASTER_URI=spark://$MASTER:7077" >> $JOB_LOG
 
 SPARK_MASTER_URI=spark://$MASTER:7077
 SPARK_HOME=$HOME/code/spark
-
 """
 
 
 SPARK_SUBMIT="""
-
 #
 # Submit the compiled Spark app to Spark
 #
@@ -53,25 +49,4 @@ else
 fi
 """
 
-import os
-import os.path
-
-generated = os.path.join(".", "generated")
-os.makedirs(generated)
-
-GEN_FILENAME = "%(generated)s/run-n%(nodes)s-p%(partitions)s-w%(workload)s-dim%(dim)s.sh"
-
-DIMENSIONS=[128, 256]
-NODES=[4, 8, 16, 32, 64]
-CORESPERNODE=12
-
-for dim in DIMENSIONS:
-   for nodes in NODES:
-       partitions = nodes * CORESPERNODE
-       workload = partitions
-       filename = GEN_FILENAME % vars()
-       with open(filename, "w") as outfile:
-          outfile.write(SCRIPT_HEADER)
-          outfile.write(SPARK_INIT)
-          outfile.write(SPARK_SUBMIT % vars())
-
+SCRIPT_FILENAME = "%(generated)s/run-n%(nodes)s-p%(partitions)s-w%(workload)s-dim%(dim)s.sh"
