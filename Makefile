@@ -21,6 +21,7 @@ assembly:
 slowclean:
 	sbt clean
 	find . -type d -name target -print | xargs rm -rf
+	find . -type d -name '*.d' -print | xargs rm -rf
 
 fastclean:
 	rm -f *.error *.cobaltlog *.output
