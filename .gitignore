@@ -32,5 +32,6 @@ scala-2.11/
 # generated scripts
 
 generated/
+*.d/
 
 
