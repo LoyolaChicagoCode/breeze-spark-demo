@@ -28,5 +28,6 @@ for dim in options.dims:
            filename = SCRIPT_FILENAME % vars()
            script_code = SCRIPT_HEADER + SPARK_INIT + SPARK_SUBMIT
            with open(filename, "w") as outfile:
+               os.chmod(filename, 0o755)
                outfile.write(script_code % vars())
 
