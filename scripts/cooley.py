@@ -24,8 +24,9 @@ for dim in options.dims:
    for nodes in options.nodes:
       for cores in options.cores:
         partitions = nodes * cores
-        workload = partitions
-        all_workloads = [ workload ] + options.add_workload
+        workload = [partitions] + options.add_workload
+	add_workload_text = ", ".join([ str(item) for item in options.add_workload])
+        all_workloads = list(set(workload))
         for workload in all_workloads:
            filename = SCRIPT_FILENAME % vars()
            script_code = SCRIPT_HEADER + SPARK_INIT + SPARK_SUBMIT

@@ -9,6 +9,7 @@ SCRIPT_HEADER=\
 # nodes = %(nodes)s
 # partitions = %(partitions)s
 # workload = %(workload)s
+# add_workload = %(add_workload_text)s
 # dimension(s) of 3D array = %(dim)s^3"
 #
 
