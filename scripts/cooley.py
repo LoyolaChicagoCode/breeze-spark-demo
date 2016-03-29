@@ -5,16 +5,18 @@ import os.path
 import tempfile
 
 
-import tempfile
-generated = tempfile.mkdtemp('.d', 'qsubs.', os.getcwd())
-print("Scripts will be written to dir %s " % generated)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dims', type=int, nargs='+', default=[128, 256])
-parser.add_argument('--nodes', type=int, nargs='+', default=[ 2**n for n in range(0, 6) ])
-parser.add_argument('--cores', type=int, nargs='+', default=[12])
-parser.add_argument('--add_workload', type=int, nargs='+', default=[])
+parser.add_argument('--dims', type=int, nargs='+', default=[128, 256], help='dimension of 3D array (be careful)')
+parser.add_argument('--nodes', type=int, nargs='+', default=[ 2**n for n in range(0, 6) ], help="cluster nodes (used for naming scripts only)")
+parser.add_argument('--cores', type=int, nargs='+', default=[12], help="cores per node (used to set partitions on Spark)")
+parser.add_argument('--add_workload', type=int, nargs='+', default=[], help="add a fixed workload (used for weak vs. strong scaling)")
+parser.add_argument('--basedir', type=type(''), default=os.getcwd(), help="where to write the scripts (current working directory")
 options = parser.parse_args()
+
+import tempfile
+generated = tempfile.mkdtemp('.d', 'qsubs.', options.basedir)
+print("Scripts will be written to dir %s " % generated)
 
 from cooley_include import *
 
