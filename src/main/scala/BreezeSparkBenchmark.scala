@@ -100,9 +100,11 @@ object BreezeSparkBenchmark {
     val outputDir = appConfig.outputDir.get
 
     val rddGenerationPhase = performance {
-      spark.parallelize(1 to workload, partitions).map {
+      val rdd = spark.parallelize(1 to workload, partitions).map {
         slice => sumOfTraces3D(slice, dim)
       }
+      rdd.persist(org.apache.spark.storage.StorageLevel.MEMORY_ONLY)
+      rdd
     }
 
     val rdd = rddGenerationPhase.result
