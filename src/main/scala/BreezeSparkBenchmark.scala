@@ -185,7 +185,7 @@ object BreezeSparkBenchmark {
       val results = ("rdd generation time" -> rddGenerationPhase.time.toJSON) ~
         ("rdd reduce time" -> rddReducePhase.time.toJSON)
 
-      val json = ("params" -> params) ~ ("results" -> results) ~ ("nodes" -> nodes)
+      val json = ("params" -> params) ~ ("results" -> results) ~ ("nodes" -> nodeUsageJSON)
       val jsonFileName = f"$outputDir/perf-d$dim%04d-n$nodes%04d-p$partitions%04d-w$workload%04d.json"
       val writer = new PrintWriter(new File(jsonFileName))
       writer.println(pretty(render(json)))
