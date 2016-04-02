@@ -188,7 +188,7 @@ object BreezeSparkBenchmark {
       val json = ("params" -> params) ~ ("results" -> results) ~ ("nodes" -> nodes)
       val jsonFileName = f"$outputDir/perf-d$dim%04d-n$nodes%04d-p$partitions%04d-w$workload%04d.json"
       val writer = new PrintWriter(new File(jsonFileName))
-      writer.println(compact(render(json)))
+      writer.println(pretty(render(json)))
       writer.close
     }
   }
