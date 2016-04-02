@@ -15,6 +15,9 @@
 // limitations under the License.
 
 package cs.luc.edu
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
+import org.json4s.JsonDSL._
 
 package object performance {
 
@@ -33,6 +36,13 @@ package object performance {
       val nsText = f"$nanoseconds%d"
       val msText = f"$milliseconds%d"
       <time raw={ rawText } nanoseconds={ nsText } milliseconds={ msText }/>
+    }
+
+    def toJSON(): org.json4s.JsonAST.JObject = {
+      val rawText = f"$t%.2f"
+      val nsText = f"$nanoseconds%d"
+      val msText = f"$milliseconds%d"
+      ("raw" -> rawText) ~ ("nanoseconds" -> nsText) ~ ("milliseconds" -> msText)
     }
   }
 

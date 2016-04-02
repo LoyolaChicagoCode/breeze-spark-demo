@@ -24,6 +24,10 @@ import org.apache.spark._
 import cs.luc.edu.performance._
 import cs.luc.edu.fileutils._
 import breeze.linalg._
+import org.json4s._
+import org.json4s.jackson._
+import org.json4s.jackson.JsonMethods._
+import org.json4s.JsonDSL._
 
 object BreezeSparkBenchmark {
 
@@ -41,8 +45,9 @@ object BreezeSparkBenchmark {
     nodes: Option[Int] = Some(DEFAULT_NODES),
     partitions: Option[Int] = Some(DEFAULT_PARTITIONS),
     workload: Option[Int] = Some(DEFAULT_WORKLOAD),
-    outputDir: Option[String] = Some(DEFAULT_OUTPUT_DIR)
-  )
+    outputDir: Option[String] = Some(DEFAULT_OUTPUT_DIR),
+    outputJson: Boolean = false,
+    outputXML: Boolean = false)
 
   // Use Breeze DenseMatrix for the layers in the 3D array.
 
@@ -79,6 +84,14 @@ object BreezeSparkBenchmark {
         c.copy(outputDir = Some(x))
       } text (s"outputDir is where to write the benchmark results (default $DEFAULT_OUTPUT_DIR)")
 
+      opt[Boolean]('j', "json") action { (x, c) =>
+        c.copy(outputJson = true)
+      }
+
+      opt[Boolean]('x', "xml") action { (x, c) =>
+        c.copy(outputXML = true)
+      }
+
       help("help") text ("prints this usage text")
     }
     parser.parse(args, Config())
@@ -111,20 +124,30 @@ object BreezeSparkBenchmark {
       rdd map { _.result } reduce (_ + _)
     }
 
-    writePerformanceReport
+    if (appConfig.outputXML)
+      writePerformanceReportXML
+    if (appConfig.outputJson)
+      writePerformanceReportJSON
     spark.stop
 
     // End of computation
 
-    def getNodeUsageXML() = {
+    def computeNodeUsage: Array[(String, Int)] = {
       val pairs = rdd.map(lc => (lc.hostname, 1))
       val counts = pairs.reduceByKey((a, b) => a + b)
-
-      val nodesUsed = counts.collect()
-      nodesUsed map { case (hostname, count) => <node name={ hostname } workload={ count.toString }/> }
+      counts.collect()
+    }
+    def nodeUsageXML: xml.Node = {
+      <nodes>
+        { computeNodeUsage map { case (hostname, count) => <node name={ hostname } workload={ count.toString }/> } }
+      </nodes>
     }
 
-    def writePerformanceReport() = {
+    def nodeUsageJSON: org.json4s.JsonAST.JObject = {
+      computeNodeUsage.foldLeft(JObject())(_ ~ _)
+    }
+
+    def writePerformanceReportXML() = {
       val document = <run>
                        <parameters>
                          <param name="dim"> { dim } </param>
@@ -140,15 +163,27 @@ object BreezeSparkBenchmark {
                            { rddReducePhase.time.toXML }
                          </performance>
                        </results>
-                       <nodes>
-                         { getNodeUsageXML }
-                       </nodes>
+                       { nodeUsageXML }
                      </run>
 
       val xmlFileName = f"$outputDir/perf-d$dim%04d-n$nodes%04d-p$partitions%04d-w$workload%04d.xml"
       val writer = new PrintWriter(new File(xmlFileName))
       val pprinter = new scala.xml.PrettyPrinter(80, 2) // scalastyle:ignore
       writer.println(pprinter.format(document)) // scalastyle:ignore
+      writer.close
+    }
+
+    def writePerformanceReportJSON() = {
+      val params = ("dim" -> dim) ~ ("partitions" -> partitions) ~
+        ("partitions" -> partitions) ~ ("nodes" -> nodes) ~ ("outputDir" -> outputDir)
+
+      val results = ("rdd generation time" -> rddGenerationPhase.time.toJSON) ~
+        ("rdd reduce time" -> rddReducePhase.time.toJSON)
+
+      val json = ("params" -> params) ~ ("results" -> results) ~ ("nodes" -> nodes)
+      val jsonFileName = f"$outputDir/perf-d$dim%04d-n$nodes%04d-p$partitions%04d-w$workload%04d.json"
+      val writer = new PrintWriter(new File(jsonFileName))
+      writer.println(compact(render(json)))
       writer.close
     }
   }
