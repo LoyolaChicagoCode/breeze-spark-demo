@@ -37,6 +37,8 @@ object BreezeSparkBenchmark {
   val DEFAULT_WORKLOAD = DEFAULT_NODES * DEFAULT_PARTITIONS
   val DEFAULT_OUTPUT_DIR = "./results"
   val DEFAULT_CACHE_POLICY = false
+  val DEFAULT_XML = false
+  val DEFAULT_JSON = false
 
   case class Data(result: Double, time: Time, space: Space, hostname: String)
 
@@ -47,7 +49,8 @@ object BreezeSparkBenchmark {
     workload: Option[Int] = Some(DEFAULT_WORKLOAD),
     outputDir: Option[String] = Some(DEFAULT_OUTPUT_DIR),
     outputJson: Boolean = false,
-    outputXML: Boolean = false)
+    outputXML: Boolean = false
+  )
 
   // Use Breeze DenseMatrix for the layers in the 3D array.
 
@@ -86,11 +89,11 @@ object BreezeSparkBenchmark {
 
       opt[Boolean]('j', "json") action { (x, c) =>
         c.copy(outputJson = true)
-      }
+      } text (s"outputJson is whether to write JSON reports (default $DEFAULT_JSON)")
 
       opt[Boolean]('x', "xml") action { (x, c) =>
         c.copy(outputXML = true)
-      }
+      } text (s"outputXML is whether to write XML reports (default $DEFAULT_XML)")
 
       help("help") text ("prints this usage text")
     }
