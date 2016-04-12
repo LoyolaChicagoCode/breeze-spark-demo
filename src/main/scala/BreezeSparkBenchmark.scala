@@ -87,11 +87,11 @@ object BreezeSparkBenchmark {
         c.copy(outputDir = Some(x))
       } text (s"outputDir is where to write the benchmark results (default $DEFAULT_OUTPUT_DIR)")
 
-      opt[Boolean]('j', "json") action { (x, c) =>
+      opt[Unit]('j', "json") action { (_, c) =>
         c.copy(outputJson = true)
       } text (s"outputJson is whether to write JSON reports (default $DEFAULT_JSON)")
 
-      opt[Boolean]('x', "xml") action { (x, c) =>
+      opt[Unit]('x', "xml") action { (_, c) =>
         c.copy(outputXML = true)
       } text (s"outputXML is whether to write XML reports (default $DEFAULT_XML)")
 
