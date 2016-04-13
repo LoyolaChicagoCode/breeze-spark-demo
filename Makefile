@@ -39,3 +39,6 @@ clean:
 
 qsub_scripts:
 	./scripts/cooley.sh
+
+csv:
+	./scripts/csv_report.py $(LOGDIR)

@@ -34,4 +34,6 @@ scala-2.11/
 generated/
 *.d/
 
+# generated output
+*.csv
 
