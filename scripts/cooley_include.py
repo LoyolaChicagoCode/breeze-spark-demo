@@ -60,7 +60,7 @@ if [ -f "target/scala-2.10/demo-breeze-spark-scala-assembly-1.0.jar" ]; then
       --dim %(dim)s --nodes %(nodes)s --partitions %(partitions)s --workload %(workload)s --outputdir /home/thiruvat/logs >> $JOB_LOG
    $SPARK_HOME/bin/spark-submit --master $SPARK_MASTER_URI \\
       target/scala-2.10/demo-breeze-spark-scala-assembly-1.0.jar \\
-      --dim %(dim)s --nodes %(nodes)s --partitions %(partitions)s --workload %(workload)s --outputdir /home/thiruvat/logs --json >> $JOB_LOG
+      --dim %(dim)s --nodes %(nodes)s --partitions %(partitions)s --workload %(workload)s --outputdir /home/thiruvat/logs --json --xml >> $JOB_LOG
 else
    echo "Could not find Scala target diretory. No experiments run." >> $JOB_LOG
 fi

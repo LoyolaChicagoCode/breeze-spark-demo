@@ -155,10 +155,11 @@ object BreezeSparkBenchmark {
     def writePerformanceReportXML() = {
       val document = <run>
                        <parameters>
-                         <param name="dim"> { dim } </param>
-                         <param name="partitions"> { partitions } </param>
-                         <param name="nodes"> { nodes } </param>
-                         <param name="outputdir"> { outputDir } </param>
+                         <param name="dim" value={ dim.toString }/>
+                         <param name="partitions" value={ partitions.toString }/>
+                         <param name="workload" value={ workload.toString }/>
+                         <param name="nodes" value={ nodes.toString }/>
+                         <param name="outputdir" value={ outputDir.toString }/>
                        </parameters>
                        <results>
                          <performance name="rdd generation time">
@@ -180,7 +181,7 @@ object BreezeSparkBenchmark {
 
     def writePerformanceReportJSON() = {
       val params = ("dim" -> dim) ~ ("partitions" -> partitions) ~
-        ("partitions" -> partitions) ~ ("nodes" -> nodes) ~ ("outputDir" -> outputDir)
+        ("workload" -> workload) ~ ("nodes" -> nodes) ~ ("outputDir" -> outputDir)
 
       val results = ("rdd generation time" -> rddGenerationPhase.time.toJSON) ~
         ("rdd reduce time" -> rddReducePhase.time.toJSON)
