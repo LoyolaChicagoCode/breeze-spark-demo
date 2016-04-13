@@ -48,10 +48,11 @@ class PerfDataXML(object):
       
 import csv
 
-with open('names.csv', 'w') as csvfile:
+with open('results.csv', 'w') as csvfile:
    fieldnames = ['dim', 'partitions', 'workload', 'rdd generation time', 'rdd reduce time', 'nodes']
    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-   writer.writeheader()
+   if sys.version_info >= (2, 7):
+      writer.writeheader()
    dir = sys.argv[1]
    for file in os.listdir(dir):
       if file.endswith('.xml'):
