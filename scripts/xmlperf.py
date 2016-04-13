@@ -46,19 +46,19 @@ class PerfDataXML(object):
          node_info[node.attrib['name']] = int(node.attrib['workload'])
       return node_info 
       
+import csv
 
-#
-# TODO: Proof of concept. It works. Next stop: Generate CSV for analytics!
-dir = sys.argv[1]
-for file in os.listdir(dir):
-   if file.endswith('.xml'):
-      path = os.path.join(dir, file)
-      pd = PerfDataXML(path)
-      print(pd.dim())
-      print(pd.partitions())
-      print(pd.workload())
-      print(pd.rdd_generation_time())
-      print(pd.rdd_reduce_time())
-      print("Nodes used")
-      for (node, workload) in pd.node_usage().items():
-         print("%(node)s = %(workload)d" % vars())
+with open('names.csv', 'w') as csvfile:
+   fieldnames = ['dim', 'partitions', 'workload', 'rdd generation time', 'rdd reduce time', 'nodes']
+   writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+   writer.writeheader()
+   dir = sys.argv[1]
+   for file in os.listdir(dir):
+      if file.endswith('.xml'):
+         path = os.path.join(dir, file)
+         pd = PerfDataXML(path)
+         writer.writerow({ 'dim' : pd.dim(), 'partitions' : pd.partitions(), 'workload' : pd.workload(),
+                          'rdd generation time' : pd.rdd_generation_time(),
+                          'rdd reduce time' : pd.rdd_reduce_time(),
+                          'nodes' : pd.nodes() })
+
