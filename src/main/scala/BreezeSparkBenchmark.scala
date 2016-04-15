@@ -129,10 +129,12 @@ object BreezeSparkBenchmark {
       rdd map { _.result } reduce (_ + _)
     }
 
-    if (appConfig.outputXML)
+    if (appConfig.outputXML) {
       writePerformanceReportXML
-    if (appConfig.outputJson)
+    }
+    if (appConfig.outputJson) {
       writePerformanceReportJSON
+    }
     spark.stop
 
     // End of computation
@@ -189,7 +191,7 @@ object BreezeSparkBenchmark {
       val json = ("params" -> params) ~ ("results" -> results) ~ ("nodes" -> nodeUsageJSON)
       val jsonFileName = f"$outputDir/perf-d$dim%04d-n$nodes%04d-p$partitions%04d-w$workload%04d.json"
       val writer = new PrintWriter(new File(jsonFileName))
-      writer.println(pretty(render(json)))
+      writer.println(pretty(render(json))) // scalastyle:ignore
       writer.close
     }
   }
